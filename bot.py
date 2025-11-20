@@ -5,6 +5,11 @@ from datetime import datetime, timedelta
 import re
 import os
 import json
+import time
+
+# Проверяем время на сервере
+print(f"Server time: {time.ctime()}")
+print(f"Timezone: {time.tzname}")
 
 print("=== Бот запущен ===")
 
@@ -17,14 +22,27 @@ bot = telebot.TeleBot(BOT_TOKEN)
 
 class ScheduleBot:
     def __init__(self):
-        # Создаем credentials.json из переменной окружения если нужно
-        if os.environ.get('GOOGLE_CREDENTIALS'):
-            credentials_data = json.loads(os.environ['GOOGLE_CREDENTIALS'])
-            with open('credentials.json', 'w') as f:
-                json.dump(credentials_data, f)
-        
-        self.gc = gspread.service_account(filename='credentials.json')
-        self.sheet = self.gc.open_by_key(SPREADSHEET_ID)
+        # Создаем временный credentials.json из переменной окружения
+        try:
+            if os.environ.get('GOOGLE_CREDENTIALS'):
+                credentials_json = os.environ['GOOGLE_CREDENTIALS']
+                print("✅ GOOGLE_CREDENTIALS found in environment")
+                
+                # Записываем в файл
+                with open('credentials.json', 'w') as f:
+                    f.write(credentials_json)
+                print("✅ credentials.json created successfully")
+            else:
+                print("❌ GOOGLE_CREDENTIALS not found in environment")
+                return None
+                
+            self.gc = gspread.service_account(filename='credentials.json')
+            self.sheet = self.gc.open_by_key(SPREADSHEET_ID)
+            print("✅ Successfully connected to Google Sheets")
+            
+        except Exception as e:
+            print(f"❌ Error initializing Google Sheets: {e}")
+            raise e
         
     def get_current_month_sheet(self):
         current_month_ru = self._get_current_month_russian()
@@ -264,5 +282,4 @@ def handle_all_messages(message):
 
 if __name__ == '__main__':
     print("Бот запущен и ожидает сообщения...")
-
     bot.infinity_polling()
