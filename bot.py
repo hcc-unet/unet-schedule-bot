@@ -3,19 +3,27 @@ import gspread
 import telebot
 from datetime import datetime, timedelta
 import re
+import os
+import json
 
 print("=== Бот запущен ===")
 
-# Конфигурация
+# Конфигурация - получаем из переменных окружения
 SPREADSHEET_ID = '1qgpURcdEGOfeG9JQRPm-hWBBCY2GkSxR5u0gnolFd1E'
-BOT_TOKEN = '8379596604:AAE50oyAXzRqvOBPRGAi8RYzPQp7tqZFYkU'
+BOT_TOKEN = os.environ.get('BOT_TOKEN', '8379596604:AAE50oyAXzRqvOBPRGAi8RYzPQp7tqZFYkU')
 
 # Инициализация бота
 bot = telebot.TeleBot(BOT_TOKEN)
 
 class ScheduleBot:
     def __init__(self):
-        self.gc = gspread.service_account(filename=r'D:\unet_bot\credentials.json')
+        # Создаем credentials.json из переменной окружения если нужно
+        if os.environ.get('GOOGLE_CREDENTIALS'):
+            credentials_data = json.loads(os.environ['GOOGLE_CREDENTIALS'])
+            with open('credentials.json', 'w') as f:
+                json.dump(credentials_data, f)
+        
+        self.gc = gspread.service_account(filename='credentials.json')
         self.sheet = self.gc.open_by_key(SPREADSHEET_ID)
         
     def get_current_month_sheet(self):
@@ -256,4 +264,5 @@ def handle_all_messages(message):
 
 if __name__ == '__main__':
     print("Бот запущен и ожидает сообщения...")
+
     bot.infinity_polling()
