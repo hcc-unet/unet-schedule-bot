@@ -1,6 +1,8 @@
+# -*- coding: utf-8 -*-
 import os
-import json
 import telebot
+import requests
+import time
 from datetime import datetime
 
 print("=== Бот запущен ===")
@@ -9,43 +11,46 @@ print("=== Бот запущен ===")
 BOT_TOKEN = os.environ.get('BOT_TOKEN')
 bot = telebot.TeleBot(BOT_TOKEN)
 
+# ПРИНУДИТЕЛЬНОЕ ЗАКРЫТИЕ СЕССИЙ
+try:
+    if BOT_TOKEN:
+        print("🔄 Закрываем предыдущие сессии бота...")
+        requests.get(f'https://api.telegram.org/bot{BOT_TOKEN}/close')
+        time.sleep(2)
+        requests.post(f'https://api.telegram.org/bot{BOT_TOKEN}/deleteWebhook')
+        time.sleep(1)
+        print("✅ Все сессии закрыты")
+except Exception as e:
+    print(f"⚠️ Ошибка при закрытии сессий: {e}")
+
+print("⏳ Ждем 5 секунд перед запуском...")
+time.sleep(5)
+
 # Простое хранилище
 user_ids = {}
 
 @bot.message_handler(commands=['start'])
 def start_handler(message):
-    user_id = message.from_user.id
-    print(f"Пользователь {user_id} начал диалог")
-    
     markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add(telebot.types.KeyboardButton("📝 Ввести ID сотрудника"))
     
     bot.send_message(
         message.chat.id,
         "Привет! Я бот для графика смен.\n"
-        "Сейчас проверяем подключение...\n"
         "Нажми '📝 Ввести ID сотрудника'",
         reply_markup=markup
     )
 
 @bot.message_handler(func=lambda message: True)
 def handle_all_messages(message):
-    user_id = message.from_user.id
     text = message.text
     
-    print(f"Получено сообщение от {user_id}: {text}")
-    
     if text == "📝 Ввести ID сотрудника":
-        bot.send_message(message.chat.id, "Временно в режиме теста. Google Sheets отключен.")
+        bot.send_message(message.chat.id, "Временно в режиме теста.")
         return
     
-    if text.isdigit():
-        user_ids[user_id] = text
-        bot.send_message(message.chat.id, f"✅ ID {text} сохранен! (Google Sheets отключен)")
-        return
-        
-    bot.send_message(message.chat.id, "Бот работает, но Google Sheets временно отключен")
+    bot.send_message(message.chat.id, "Бот работает! ✅")
 
 if __name__ == '__main__':
-    print("✅ Бот запускается без Google Sheets...")
+    print("🚀 Запускаем бота...")
     bot.infinity_polling()
